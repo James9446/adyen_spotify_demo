@@ -133,3 +133,10 @@ h1, h2 {
 #dropin-container {
   margin-top: 20px;
 }
+
+.checkout-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+}

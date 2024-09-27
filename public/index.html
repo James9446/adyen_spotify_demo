@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify - Web Player</title>
-    <script src="index.js" defer></script>
+    <!-- <script src="index.js" defer></script> -->
     <link rel="stylesheet" href="main.css">
     <script src="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.31.1/adyen.js"></script>
     <link rel="stylesheet" href="https://checkoutshopper-test.adyen.com/checkoutshopper/sdk/5.31.1/adyen.css" />
@@ -12,9 +12,11 @@
 <body>
     <div class="container">
         <div class="sidebar">
-            <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_White.png" alt="Spotify" class="logo">
+            <a href="index.html">
+                <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_White.png" alt="Spotify" class="logo">
+            </a>
             <nav>
-                <a href="#" class="nav-item">Home</a>
+                <a href="index.html" class="nav-item">Home</a>
                 <a href="#" class="nav-item">Search</a>
                 <a href="#" class="nav-item">Your Library</a>
                 <a href="#" class="nav-item">Create Playlist</a>
@@ -49,11 +51,12 @@
                         <div class="playlist-description">Rock legends & epic songs</div>
                     </div>
                 </div>
-                <h2>Choose your Premium plan</h2>
+                <!-- <h2>Choose your Premium plan</h2> -->
                 <div class="plan">
                     <h2>Premium Individual</h2>
-                    <p>Ad-free music listening, play offline, on-demand playback</p>
-                    <button id="premium-btn" class="button">Get Premium</button>
+                    <!-- <p>Ad-free music listening, play offline, on-demand playback</p> -->
+                    <a href="checkout.html" class="button">Get Premium</a>
+                    <!-- <button id="premium-btn" class="button">Get Premium</button> -->
                 </div>
                 <div id="dropin-container"></div>
             </div>

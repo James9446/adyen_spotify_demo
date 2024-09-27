@@ -25,6 +25,10 @@ const client = new Client({ config });
 client.setEnvironment("TEST");  // change to LIVE for production
 const checkout = new CheckoutAPI(client);
 
+app.get('/checkout.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'checkout.html'));
+});
+
 // API Endpoints
 app.post("/api/sessions", async (req, res) => {
   try {
