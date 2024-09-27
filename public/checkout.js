@@ -72,6 +72,9 @@ async function createAdyenCheckout(session) {
                       color: '#FFFFFF',
                       fontSize: '14px',
                       lineHeight: '14px',
+                  },
+                  error: {
+                    color: '#FFFFFF'
                   }
               }
           },
@@ -112,23 +115,77 @@ async function callServer(url, data) {
 }
 
 function handleServerResponse(res, component) {
+  console.log("response: ", res);
+  console.log("component: ", component);
   if (res.action) {
       component.handleAction(res.action);
   } else {
       switch (res.resultCode) {
           case "Authorised":
-              window.location.href = "/result/success";
+              // window.location.href = "/result/success";
+              console.log("res.resultCode: ", res.resultCode);
+              changeCheckoutTitle("Payment Completed");
+              setTimeout(() => {
+                  addPaymentCompleteMessage();
+              }, 2000);
+              setTimeout(() => {
+                addReturnHomeButton();
+            }, 4000);
               break;
           case "Pending":
           case "Received":
-              window.location.href = "/result/pending";
+              // window.location.href = "/result/pending";
+              changeCheckoutTitle("Pending...");
+              console.log("res.resultCode: ", res.resultCode);
               break;
           case "Refused":
-              window.location.href = "/result/failed";
+              // window.location.href = "/result/failed";
+              console.log("res.resultCode: ", res.resultCode);
               break;
           default:
-              window.location.href = "/result/error";
+              // window.location.href = "/result/error";
+              console.log("res.resultCode: ", res.resultCode);
               break;
       }
   }
+}
+
+function changeCheckoutTitle(newTitle) {
+  const titleElement = document.getElementById('checkout-title');
+  if (titleElement) {
+      titleElement.textContent = newTitle;
+  } else {
+      console.error('Checkout title element not found');
+  }
+}
+
+function addPaymentCompleteMessage() {
+  const container = document.querySelector('.checkout-container');
+  
+  // Add thank you message
+  const thankYouMessage = document.createElement('p');
+  thankYouMessage.textContent = "Congratulations on joining Spotify Premium!";
+  thankYouMessage.style.marginTop = '20px';
+  container.appendChild(thankYouMessage);
+}
+
+function addReturnHomeButton() {
+  const container = document.querySelector('.checkout-container');
+  
+  // Add button to navigate back to homepage
+  const homeButton = document.createElement('button');
+  homeButton.textContent = "Learn About New Features";
+  homeButton.style.marginTop = '20px';
+  homeButton.style.padding = '10px 20px';
+  homeButton.style.backgroundColor = '#1DB954';
+  homeButton.style.color = 'white';
+  homeButton.style.border = 'none';
+  homeButton.style.borderRadius = '20px';
+  homeButton.style.cursor = 'pointer';
+  
+  homeButton.addEventListener('click', () => {
+      window.location.href = '/'; // Adjust this if your homepage URL is different
+  });
+  
+  container.appendChild(homeButton);
 }
