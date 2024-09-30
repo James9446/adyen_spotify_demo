@@ -25,7 +25,7 @@ const client = new Client({ config });
 client.setEnvironment("TEST");  // change to LIVE for production
 const checkout = new CheckoutAPI(client);
 
-app.get('/checkout.html', (req, res) => {
+app.get('/checkout', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'checkout.html'));
 });
 
@@ -37,14 +37,13 @@ app.post("/api/sessions", async (req, res) => {
     const protocol = req.socket.encrypted ? 'https' : 'http';
 
     const response = await checkout.PaymentsApi.sessions({
-      amount: { currency: "EUR", value: 10000 },
-      countryCode: "NL",
+      amount: { currency: "USD", value: 10000 },
+      countryCode: "US",
       merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
       reference: orderRef,
       returnUrl: `${protocol}://${localhost}/checkout?orderRef=${orderRef}`,
       lineItems: [
-        {quantity: 1, amountIncludingTax: 5000 , description: "Sunglasses"},
-        {quantity: 1, amountIncludingTax: 5000 , description: "Headphones"}
+        {quantity: 1, amountIncludingTax: 10000 , description: "Premium Membership"},
       ]
     });
 

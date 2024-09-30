@@ -1,12 +1,10 @@
-// Get clientKey from an environment variable or a configuration file
-const clientKey = "test_DDPEW35DI5ET7OKNYSWKQ7BG5ID2GFHS"; // Replace this with your actual client key
-const type = "dropin"; // Assuming you're using the drop-in component
+const clientKey = "test_DDPEW35DI5ET7OKNYSWKQ7BG5ID2GFHS"; 
+const type = "dropin"; 
 
 // Used to finalize a checkout call in case of redirect
 const urlParams = new URLSearchParams(window.location.search);
 const sessionId = urlParams.get('sessionId');
 const redirectResult = urlParams.get('redirectResult');
-
 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -49,56 +47,47 @@ async function finalizeCheckout() {
 }
 
 async function createAdyenCheckout(session) {
-  const configuration = {
-      clientKey,
-      locale: "en_US",
-      environment: "test",  // change to live for production
-      showPayButton: true,
-      session: session,
-      paymentMethodsConfiguration: {
-          ideal: {
-              showImage: true
-          },
-          card: {
-              hasHolderName: true,
-              holderNameRequired: true,
-              name: "Credit or debit card",
-              amount: {
-                  value: 10000,
-                  currency: "EUR"
-              },
-              styles: {
-                  base: {
-                      color: '#FFFFFF',
-                      fontSize: '14px',
-                      lineHeight: '14px',
-                  },
-                  error: {
-                    color: '#FFFFFF'
-                  }
-              }
-          },
-          paypal: {
-              amount: {
-                  currency: "USD",
-                  value: 10000
-              },
-              environment: "test",
-              countryCode: "US"
-          },
-          style: {
-              theme: 'dark',
-              backdrop: 'rgba(0, 0, 0, 0.85)',
-          }
-      },
-      onPaymentCompleted: (result, component) => {
-          handleServerResponse(result, component);
-      },
-      onError: (error, component) => {
-          console.error(error.name, error.message, error.stack, component);
-      }
-  };
-
+    const configuration = {
+        clientKey,
+        locale: "en_US",
+        environment: "test",  // change to live for production
+        showPayButton: true,
+        session: session,
+        paymentMethodsConfiguration: {
+            ideal: {
+                showImage: true
+            },
+            card: {
+                hasHolderName: true,
+                holderNameRequired: true,
+                name: "Credit or debit card",
+                amount: {
+                    value: 10000,
+                    currency: "USD"
+                },
+                styles: {
+                    base: {
+                        color: '#FFFFFF',
+                        fontSize: '14px',
+                        lineHeight: '14px',
+                    },
+                    error: {
+                        color: '#FFFFFF'
+                    }
+                }
+            },
+            style: {
+                theme: 'dark',
+                backdrop: 'rgba(0, 0, 0, 0.85)',
+            }
+        },
+        onPaymentCompleted: (result, component) => {
+            handleServerResponse(result, component);
+        },
+        onError: (error, component) => {
+            console.error(error.name, error.message, error.stack, component);
+        }
+    };
   return new AdyenCheckout(configuration);
 }
 
