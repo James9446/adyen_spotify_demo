@@ -7,6 +7,7 @@ const sessionId = urlParams.get('sessionId');
 const redirectResult = urlParams.get('redirectResult');
 
 
+// Trigger the Drop-in component on page load
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     initializeDropin()
@@ -16,10 +17,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-
+// Create the Drop-in component
 async function initializeDropin() {
-  try {
-      // Init Sessions
+    try {
+        // Init Sessions
       const checkoutSessionResponse = await callServer("/api/sessions?type=" + type);
 
       // Create AdyenCheckout using Sessions response
@@ -27,23 +28,10 @@ async function initializeDropin() {
 
       // Create an instance of Drop-in and mount it
       checkout.create(type).mount(document.getElementById('dropin-container'));
-  } catch (error) {
-      console.error(error);
-      alert("Error occurred. Look at console for details");
-  }
-}
-
-async function finalizeCheckout() {
-  try {
-      // Create AdyenCheckout re-using existing Session
-      const checkout = await createAdyenCheckout({id: sessionId});
-
-      // Submit the extracted redirectResult
-      checkout.submitDetails({details: {redirectResult}});
-  } catch (error) {
-      console.error(error);
-      alert("Error occurred. Look at console for details");
-  }
+    } catch (error) {
+        console.error('Error in initializeDropin:', error);
+        alert("Error occurred. Look at console for details");
+    }
 }
 
 async function createAdyenCheckout(session) {
@@ -53,6 +41,9 @@ async function createAdyenCheckout(session) {
         environment: "test",  // change to live for production
         showPayButton: true,
         session: session,
+        analytics: {
+            enabled: true
+        },
         paymentMethodsConfiguration: {
             ideal: {
                 showImage: true
@@ -60,6 +51,7 @@ async function createAdyenCheckout(session) {
             card: {
                 hasHolderName: true,
                 holderNameRequired: true,
+                hideCVC: false,
                 name: "Credit or debit card",
                 amount: {
                     value: 10000,
@@ -84,6 +76,11 @@ async function createAdyenCheckout(session) {
         onPaymentCompleted: (result, component) => {
             handleServerResponse(result, component);
         },
+        // 3DS2 handling
+        onAdditionalDetails: (state, component) => {
+            console.log('OnAdditionalDetails: ', state);
+            handleOnAdditionalDetails(state, component);
+        },
         onError: (error, component) => {
             console.error(error.name, error.message, error.stack, component);
         }
@@ -91,8 +88,25 @@ async function createAdyenCheckout(session) {
   return new AdyenCheckout(configuration);
 }
 
+async function handleOnAdditionalDetails(state, component) {
+    try {
+        console.log("Sending to server:", state.data);
+        const response = await callServer("/api/payments/details", state.data);
+
+        if (response.resultCode === "Authorised") {
+            // Trigger the payment complete animation after 3DS2 challenge is completed
+            component.setStatus('success', { message: 'Payment successful!' });
+        };
+        handleServerResponse(response, component);
+    } catch (error) {
+        console.error('Error submitting additional details:', error);
+        handleServerResponse(response, component);;
+    }
+}
+
+
 async function callServer(url, data) {
-  const res = await fetch(url, {
+  const response = await fetch(url, {
       method: "POST",
       body: data ? JSON.stringify(data) : "",
       headers: {
@@ -100,43 +114,41 @@ async function callServer(url, data) {
       },
   });
 
-  return await res.json();
+  return await response.json();
 }
 
-function handleServerResponse(res, component) {
-  console.log("response: ", res);
-  console.log("component: ", component);
-  if (res.action) {
-      component.handleAction(res.action);
-  } else {
-      switch (res.resultCode) {
-          case "Authorised":
-              // window.location.href = "/result/success";
-              console.log("res.resultCode: ", res.resultCode);
-              changeCheckoutTitle("Payment Completed");
-              setTimeout(() => {
-                  addPaymentCompleteMessage();
-              }, 2000);
-              setTimeout(() => {
-                addReturnHomeButton();
-            }, 4000);
-              break;
-          case "Pending":
-          case "Received":
-              // window.location.href = "/result/pending";
-              changeCheckoutTitle("Pending...");
-              console.log("res.resultCode: ", res.resultCode);
-              break;
-          case "Refused":
-              // window.location.href = "/result/failed";
-              console.log("res.resultCode: ", res.resultCode);
-              break;
-          default:
-              // window.location.href = "/result/error";
-              console.log("res.resultCode: ", res.resultCode);
-              break;
-      }
-  }
+function handleServerResponse(response, component) {
+    if (response.action) {
+        component.handleAction(response.action);
+    } else {
+        switch (response.resultCode) {
+            case "Authorised":
+                console.log("response.resultCode: ", response.resultCode);
+                changeCheckoutTitle("Payment Completed");
+                setTimeout(addPaymentCompleteMessage, 2000);
+                setTimeout(addReturnHomeButton, 4000);
+                break;
+            case "Pending":
+            case "Received":
+                changeCheckoutTitle("Pending...");
+                console.log("response.resultCode: ", response.resultCode);
+                break;
+            case "Refused":
+                changeCheckoutTitle("Payment Refused");
+                console.log("response.resultCode: ", response.resultCode);
+                break;
+            case "RedirectShopper":
+                // Handle 3DS2 redirect
+                if (response.redirect) {
+                    window.location = response.redirect.url;
+                }
+                break;
+            default:
+                changeCheckoutTitle("Error");
+                console.log("response.resultCode: ", response.resultCode);
+                break;
+        }
+    }
 }
 
 function changeCheckoutTitle(newTitle) {

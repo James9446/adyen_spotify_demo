@@ -44,13 +44,55 @@ app.post("/api/sessions", async (req, res) => {
       returnUrl: `${protocol}://${localhost}/checkout?orderRef=${orderRef}`,
       lineItems: [
         {quantity: 1, amountIncludingTax: 10000 , description: "Premium Membership"},
-      ]
+      ],
+      idempotencyKey: uuid(),
+      channel: "web",
+      additionalData: {
+        allow3DS2: true
+      },
+      authenticationData: {
+        attemptAuthentication: "always"
+      }
     });
 
     res.json(response);
   } catch (err) {
-    console.error(`Error: ${err.message}, error code: ${err.errorCode}`);
-    res.status(err.statusCode).json(err.message);
+    console.error(`Error: ${err.message}, error code: ${err.errorCode}, stack: ${err.stack}`);
+    res.status(err.statusCode || 500).json({ error: 'An error occurred during payment processing' });
+  }
+});
+
+app.post("/api/payments/details", async (req, res) => {
+  // console.log("Received payload:", req.body);
+  try {
+    const payload = req.body;
+
+    // Input validation
+    if (!payload.details) {
+      console.log("Invalid payload received:", payload);
+      return res.status(400).json({ error: 'Invalid request body' });
+    }
+
+    const response = await checkout.PaymentsApi.paymentsDetails({
+      details: payload.details
+    });
+
+    console.log("Adyen response:", response);
+
+    let result = {
+      resultCode: response.resultCode,
+      refusalReason: response.refusalReason
+    };
+
+    // Check if action is needed
+    if (response.action) {
+      result.action = response.action;
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error(`Error: ${err.message}, error code: ${err.errorCode}, stack: ${err.stack}`);
+    res.status(err.statusCode || 500).json({ error: 'An error occurred during payment processing' });
   }
 });
 
@@ -77,6 +119,7 @@ app.post("/api/webhooks/notifications", async (req, res) => {
   }
 });
 
+// possible todo: implement event consumption logic
 function consumeEvent(notification) {
   // Implement event consumption logic here
 }
