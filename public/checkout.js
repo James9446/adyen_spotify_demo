@@ -1,4 +1,3 @@
-const clientKey = "test_DDPEW35DI5ET7OKNYSWKQ7BG5ID2GFHS"; 
 const type = "dropin"; 
 
 // Used to finalize a checkout call in case of redirect
@@ -35,6 +34,7 @@ async function initializeDropin() {
 }
 
 async function createAdyenCheckout(session) {
+    const clientKey = await getClientKey();
     const configuration = {
         clientKey,
         locale: "en_US",
@@ -88,19 +88,50 @@ async function createAdyenCheckout(session) {
   return new AdyenCheckout(configuration);
 }
 
+// async function handleOnAdditionalDetails(state, component) {
+//     try {
+//         console.log("Sending to server:", state.data);
+//         const response = await callServer("/api/payments/details", state.data);
+
+//         if (response.resultCode === "Authorised") {
+//             // Trigger the payment complete animation after 3DS2 challenge is completed
+//             component.setStatus('success', { message: 'Payment successful!' });
+//         };
+//         handleServerResponse(response, component);
+//     } catch (error) {
+//         console.error('Error submitting additional details:', error);
+//         handleServerResponse(response, component);;
+//     }
+// }
 async function handleOnAdditionalDetails(state, component) {
     try {
-        console.log("Sending to server:", state.data);
+        // console.log("Sending to server:", state.data);
         const response = await callServer("/api/payments/details", state.data);
 
-        if (response.resultCode === "Authorised") {
-            // Trigger the payment complete animation after 3DS2 challenge is completed
-            component.setStatus('success', { message: 'Payment successful!' });
-        };
+        switch (response.resultCode) {
+            case "Authorised":
+                component.setStatus('success', { message: 'Payment successful!' });
+                break;
+            case "Pending":
+            case "Received":
+                component.setStatus('loading', { message: 'Payment is being processed...' });
+                break;
+            case "Refused":
+                component.setStatus('error', { message: 'Payment was refused. Please try again.' });
+                break;
+            case "Error":
+                component.setStatus('error', { message: 'An error occurred. Please try again.' });
+                break;
+            default:
+                // Handle any other result codes
+                component.setStatus('error', { message: 'Unexpected result. Please contact support.' });
+        }
+
         handleServerResponse(response, component);
     } catch (error) {
         console.error('Error submitting additional details:', error);
-        handleServerResponse(response, component);;
+        component.setStatus('error', { message: 'An error occurred. Please try again.' });
+        handleServerResponse(error, component);
     }
 }
 
@@ -150,6 +181,14 @@ function handleServerResponse(response, component) {
         }
     }
 }
+
+// Utility functions
+
+async function getClientKey() {
+    const response = await fetch('/api/getClientKey');
+    const data = await response.json();
+    return data.clientKey;
+  }
 
 function changeCheckoutTitle(newTitle) {
   const titleElement = document.getElementById('checkout-title');
