@@ -29,6 +29,11 @@ app.get('/checkout', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'checkout.html'));
 });
 
+// Pass the clientKey to the client
+app.get('/api/getClientKey', (req, res) => {
+  res.json({ clientKey: process.env.ADYEN_CLIENT_KEY });
+});
+
 // API Endpoints
 app.post("/api/sessions", async (req, res) => {
   try {
@@ -77,7 +82,7 @@ app.post("/api/payments/details", async (req, res) => {
       details: payload.details
     });
 
-    console.log("Adyen response:", response);
+    // console.log("Adyen response:", response);
 
     let result = {
       resultCode: response.resultCode,
