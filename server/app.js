@@ -38,63 +38,26 @@ app.get('/api/getClientKey', (req, res) => {
 app.post("/api/sessions", async (req, res) => {
   try {
     const orderRef = uuid();
-    const localhost = req.get('host');
+    const address = req.get('host'); // testing on localhost:3000
     const protocol = req.socket.encrypted ? 'https' : 'http';
+    const amount = {
+      currency: req.body.amount.currency,
+      value: req.body.amount.value
+    };
+    const countryCode = req.body.countryCode;
+    const lineItems = req.body.lineItems;
 
     const response = await checkout.PaymentsApi.sessions({
-      amount: { currency: "USD", value: 10000 },
-      countryCode: "US",
+      amount,
+      countryCode,
       merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
       reference: orderRef,
-      returnUrl: `${protocol}://${localhost}/checkout?orderRef=${orderRef}`,
-      lineItems: [
-        {quantity: 1, amountIncludingTax: 10000 , description: "Premium Membership"},
-      ],
-      idempotencyKey: uuid(),
-      channel: "web",
-      additionalData: {
-        allow3DS2: true
-      },
-      authenticationData: {
-        attemptAuthentication: "always"
-      }
+      returnUrl: `${protocol}://${address}/checkout?orderRef=${orderRef}`,
+      lineItems,
     });
 
+    // return the session to the client i.e. return the CreateCheckoutSessionResponse object
     res.json(response);
-  } catch (err) {
-    console.error(`Error: ${err.message}, error code: ${err.errorCode}, stack: ${err.stack}`);
-    res.status(err.statusCode || 500).json({ error: 'An error occurred during payment processing' });
-  }
-});
-
-app.post("/api/payments/details", async (req, res) => {
-  // console.log("Received payload:", req.body);
-  try {
-    const payload = req.body;
-
-    // Input validation
-    if (!payload.details) {
-      console.log("Invalid payload received:", payload);
-      return res.status(400).json({ error: 'Invalid request body' });
-    }
-
-    const response = await checkout.PaymentsApi.paymentsDetails({
-      details: payload.details
-    });
-
-    // console.log("Adyen response:", response);
-
-    let result = {
-      resultCode: response.resultCode,
-      refusalReason: response.refusalReason
-    };
-
-    // Check if action is needed
-    if (response.action) {
-      result.action = response.action;
-    }
-
-    res.json(result);
   } catch (err) {
     console.error(`Error: ${err.message}, error code: ${err.errorCode}, stack: ${err.stack}`);
     res.status(err.statusCode || 500).json({ error: 'An error occurred during payment processing' });
