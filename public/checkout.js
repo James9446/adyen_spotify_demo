@@ -4,16 +4,16 @@ const sessionId = urlParams.get('sessionId');
 const redirectResult = urlParams.get('redirectResult');
 
 
-// Trigger the Drop-in component on page load
+// Trigger the checkout process on page load
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     if (!sessionId) {
         // new session: start checkout
-        initializeDropin();
+        startCheckout();
     }
     else {
         // existing session: complete Checkout
-        finalizeSession()
+        handleRedirect()
     }
   } catch (error) {
       console.error('Error:', error);
@@ -21,37 +21,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// Create the Drop-in component
-async function initializeDropin() {
+// Start the checkout process
+async function startCheckout() {
     try {
         const checkoutDetials = {
             amount: {
                 value: 10000,
-                currency: "USD"
+                currency: "EUR"
             },
-            countryCode: "US",
+            countryCode: "NL",
             lineItems: [
                 {quantity: 1, amountIncludingTax: 10000 , description: "Premium Membership"},
             ]
         }
-        // Init Session
+        // Call the server to create a payment session
         const session = await callServer(`/api/sessions`, checkoutDetials);
 
-        // Create AdyenCheckout instance using the session returned by the server
-        const checkout = await createAdyenCheckout(session);
+        // Create checkout instance using the session returned by the server
+        const checkout = await createCheckoutInstance(session);
 
-        // Create an instance of Drop-in and mount it
+        // Create Drop-in component and mount it
         checkout.create("dropin", {instantPaymentTypes: ['googlepay']}).mount(document.getElementById('dropin-container'));
     } catch (error) {
-        console.error('Error in initializeDropin:', error);
+        console.error('Error in startCheckout:', error);
         alert("Error occurred. Look at console for details");
     }
 }
 
-// Create AdyenCheckout instance
-async function createAdyenCheckout(session) {
+// Create and configure checkout instance
+async function createCheckoutInstance(session) {
     const clientKey = await getClientKey();
     const amount = session.amount;
+
+    // Configure checkout instance 
     const configuration = {
         clientKey,
         locale: "en_US",
@@ -94,13 +96,14 @@ async function createAdyenCheckout(session) {
   return new AdyenCheckout(configuration);
 }
 
-// Finalize the session
-async function finalizeSession() {
-    try {
-        // Create AdyenCheckout instance re-using existing Session
-        const checkout = await createAdyenCheckout({id: sessionId});
 
-        // Submit the extracted redirectResult - triggers the onPaymentCompleted() handler  
+// Handle redirects after card challenges
+async function handleRedirect() {
+    try {
+        // Create checkout instance using Session extracted from query string parameter
+        const checkout = await createCheckoutInstance({id: sessionId});
+        
+        // Submit the extracted redirectResult - triggers the onPaymentCompleted() handler          
         checkout.submitDetails({details: {redirectResult}});
     } catch (error) {
         console.error(error);
@@ -109,36 +112,32 @@ async function finalizeSession() {
 }
 
 // Handle the payment result
-function handlePaymentResult(response, component) {
-    if (response.action) {
-        component.handleAction(response.action);
-    } else {
-        switch (response.resultCode) {
-            case "Authorised":
-                changeCheckoutTitle("Payment Completed");
-                setTimeout(addPaymentCompleteMessage, 2000);
-                setTimeout(addButton, 3000);
-                console.log("response.resultCode: ", response.resultCode);
-                break;
-            case "Refused":
-                changeCheckoutTitle("Payment Refused");
-                setTimeout(() => {
-                    addPaymentCompleteMessage("We encountered a problem while processing your payment method.");
-                    addPaymentCompleteMessage("Please try again, or choose a different payment method to complete your purchase.");
-                    addButton("/checkout", "Continue");
-                }, 1500);
-                console.log("response.resultCode: ", response.resultCode);
-                break;
-            case "Pending":
-                console.log("response.resultCode: ", response.resultCode);
-            case "Received":
-                console.log("response.resultCode: ", response.resultCode);
-                break;
-            default:
-                changeCheckoutTitle("Error");
-                console.log("response.resultCode: ", response.resultCode);
-                break;
-        }
+function handlePaymentResult(response) {
+    switch (response.resultCode) {
+        case "Authorised":
+            changeCheckoutTitle("Payment Completed");
+            setTimeout(addPaymentCompleteMessage, 2000);
+            setTimeout(addButton, 3000);
+            console.log("response.resultCode: ", response.resultCode);
+            break;
+        case "Refused":
+            changeCheckoutTitle("Payment Refused");
+            setTimeout(() => {
+                addPaymentCompleteMessage("We encountered a problem while processing your payment method.");
+                addPaymentCompleteMessage("Please try again, or choose a different payment method to complete your purchase.");
+                addButton("/checkout", "Continue");
+            }, 1500);
+            console.log("response.resultCode: ", response.resultCode);
+            break;
+        case "Pending":
+            console.log("response.resultCode: ", response.resultCode);
+        case "Received":
+            console.log("response.resultCode: ", response.resultCode);
+            break;
+        default:
+            changeCheckoutTitle("Error");
+            console.log("response.resultCode: ", response.resultCode);
+            break;
     }
 }
 

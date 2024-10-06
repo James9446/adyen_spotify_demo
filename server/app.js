@@ -25,15 +25,6 @@ const client = new Client({ config });
 client.setEnvironment("TEST");  // change to LIVE for production
 const checkout = new CheckoutAPI(client);
 
-app.get('/checkout', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'checkout.html'));
-});
-
-// Pass the clientKey to the client
-app.get('/api/getClientKey', (req, res) => {
-  res.json({ clientKey: process.env.ADYEN_CLIENT_KEY });
-});
-
 // API Endpoints
 app.post("/api/sessions", async (req, res) => {
   try {
@@ -67,7 +58,7 @@ app.post("/api/sessions", async (req, res) => {
 // Webhook
 app.post("/api/webhooks/notifications", async (req, res) => {
   const hmacKey = process.env.ADYEN_HMAC_KEY;
-  const validator = new hmacValidator()
+  const validator = new hmacValidator();
   const notificationRequest = req.body;
   const notificationRequestItems = notificationRequest.notificationItems
   const notification = notificationRequestItems[0].NotificationRequestItem
@@ -95,6 +86,16 @@ function consumeEvent(notification) {
 // Serve the index.html file for the root route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+// Server the checkout.html file 
+app.get('/checkout', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'checkout.html'));
+});
+
+// Serve the clientKey to the client
+app.get('/api/getClientKey', (req, res) => {
+  res.json({ clientKey: process.env.ADYEN_CLIENT_KEY });
 });
 
 // Start server
